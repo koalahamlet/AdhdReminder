@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ADHD Reminder</string>
+    <string name="notification_channel_name">Location reminders</string>
+    <string name="notification_channel_description">Reminders that appear when you arrive at a saved place</string>
+</resources>
