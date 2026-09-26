@@ -48,6 +48,8 @@ class MainActivity : ComponentActivity() {
     private val reminders = mutableStateListOf<LocationReminder>()
     private var screen by mutableStateOf(Screen.MAP)
     private var selectedPlace by mutableStateOf<SelectedPlace?>(null)
+    private var editingReminder by mutableStateOf<LocationReminder?>(null)
+    private var editorReturnScreen by mutableStateOf(Screen.MAP)
     private var statusMessage by mutableStateOf<String?>(null)
     private var showBackgroundLocationDialog by mutableStateOf(false)
     private var permissionRefresh by mutableIntStateOf(0)
@@ -126,6 +128,7 @@ class MainActivity : ComponentActivity() {
                     latitude = location.latitude,
                     longitude = location.longitude,
                 )
+                editingReminder = null
                 screen = Screen.CREATE
             }
             .addOnFailureListener { error ->
@@ -135,19 +138,44 @@ class MainActivity : ComponentActivity() {
 
     private fun saveReminder(message: String, radiusMeters: Float) {
         val place = selectedPlace ?: return
-        val reminder = LocationReminder(
-            id = UUID.randomUUID().toString(),
+        val original = editingReminder
+        val reminder = original?.copy(
             message = message.trim(),
-            placeName = place.name,
-            latitude = place.latitude,
-            longitude = place.longitude,
             radiusMeters = radiusMeters,
-        )
+        ) ?: LocationReminder(
+                id = UUID.randomUUID().toString(),
+                message = message.trim(),
+                placeName = place.name,
+                latitude = place.latitude,
+                longitude = place.longitude,
+                radiusMeters = radiusMeters,
+            )
         store.save(reminder)
         reloadReminders()
-        screen = Screen.MAP
+        screen = if (original == null) Screen.MAP else editorReturnScreen
         selectedPlace = null
-        requestReminderPermissions()
+        editingReminder = null
+
+        if (original == null) {
+            requestReminderPermissions()
+        } else {
+            when {
+                reminder.isArmed && registrar.canRegister -> registrar.register(reminder)
+                reminder.isTriggered -> ReminderNotifications.show(this, reminder)
+            }
+            statusMessage = "Reminder updated."
+        }
+    }
+
+    private fun editReminder(reminder: LocationReminder) {
+        editorReturnScreen = screen
+        editingReminder = reminder
+        selectedPlace = SelectedPlace(
+            name = reminder.placeName,
+            latitude = reminder.latitude,
+            longitude = reminder.longitude,
+        )
+        screen = Screen.CREATE
     }
 
     private fun reloadReminders() {
@@ -275,6 +303,7 @@ class MainActivity : ComponentActivity() {
                 onDismissStatus = { statusMessage = null },
                 onSearch = ::launchAddressSearch,
                 onLongPress = { point ->
+                    editingReminder = null
                     selectedPlace = SelectedPlace(
                         name = String.format(Locale.US, "Dropped pin · %.5f, %.5f", point.latitude, point.longitude),
                         latitude = point.latitude,
@@ -285,16 +314,25 @@ class MainActivity : ComponentActivity() {
                 onManage = { screen = Screen.REMINDERS },
                 onActivate = ::activateReminders,
                 onRequestLocation = ::requestMapLocation,
+                onEdit = ::editReminder,
                 onDelete = ::deleteReminder,
             )
             Screen.CREATE -> ReminderCreationScreen(
                 place = selectedPlace ?: return,
-                onBack = { screen = Screen.MAP },
+                initialMessage = editingReminder?.message.orEmpty(),
+                initialRadiusMeters = editingReminder?.radiusMeters ?: 150f,
+                isEditing = editingReminder != null,
+                onBack = {
+                    screen = if (editingReminder == null) Screen.MAP else editorReturnScreen
+                    selectedPlace = null
+                    editingReminder = null
+                },
                 onSave = ::saveReminder,
             )
             Screen.REMINDERS -> ReminderListScreen(
                 reminders = reminders,
                 onBack = { screen = Screen.MAP },
+                onEdit = ::editReminder,
                 onDelete = ::deleteReminder,
             )
         }
@@ -322,4 +360,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

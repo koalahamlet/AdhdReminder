@@ -29,16 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.koalahamlet.adhdreminder.data.LocationReminder
-import com.koalahamlet.adhdreminder.ui.components.DeleteReminderDialog
+import com.koalahamlet.adhdreminder.ui.components.ReminderActionsDialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReminderListScreen(
     reminders: List<LocationReminder>,
     onBack: () -> Unit,
+    onEdit: (LocationReminder) -> Unit,
     onDelete: (LocationReminder) -> Unit,
 ) {
-    var reminderPendingDelete by remember { mutableStateOf<LocationReminder?>(null) }
+    var reminderPendingAction by remember { mutableStateOf<LocationReminder?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,7 +62,7 @@ fun ReminderListScreen(
                     Card(
                         modifier = Modifier.combinedClickable(
                             onClick = {},
-                            onLongClick = { reminderPendingDelete = reminder },
+                            onLongClick = { reminderPendingAction = reminder },
                         ),
                     ) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -96,12 +97,16 @@ fun ReminderListScreen(
         }
     }
 
-    reminderPendingDelete?.let { reminder ->
-        DeleteReminderDialog(
+    reminderPendingAction?.let { reminder ->
+        ReminderActionsDialog(
             reminder = reminder,
-            onDismiss = { reminderPendingDelete = null },
-            onConfirm = {
-                reminderPendingDelete = null
+            onDismiss = { reminderPendingAction = null },
+            onEdit = {
+                reminderPendingAction = null
+                onEdit(reminder)
+            },
+            onDelete = {
+                reminderPendingAction = null
                 onDelete(reminder)
             },
         )

@@ -9,21 +9,24 @@ import androidx.compose.runtime.Composable
 import com.koalahamlet.adhdreminder.data.LocationReminder
 
 @Composable
-fun DeleteReminderDialog(
+fun ReminderActionsDialog(
     reminder: LocationReminder,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete reminder?") },
-        text = { Text("“${reminder.message}” will be permanently removed.") },
+        title = { Text(reminder.message) },
+        text = { Text("What would you like to do with this reminder?") },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(onClick = onDelete) {
                 Text("Delete", color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onEdit) { Text("Edit") }
+        },
     )
 }
 

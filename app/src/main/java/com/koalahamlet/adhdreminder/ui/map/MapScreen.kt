@@ -47,7 +47,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.koalahamlet.adhdreminder.data.LocationReminder
-import com.koalahamlet.adhdreminder.ui.components.DeleteReminderDialog
+import com.koalahamlet.adhdreminder.ui.components.ReminderActionsDialog
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -64,9 +64,10 @@ fun MapScreen(
     onManage: () -> Unit,
     onActivate: () -> Unit,
     onRequestLocation: () -> Unit,
+    onEdit: (LocationReminder) -> Unit,
     onDelete: (LocationReminder) -> Unit,
 ) {
-    var reminderPendingDelete by remember { mutableStateOf<LocationReminder?>(null) }
+    var reminderPendingAction by remember { mutableStateOf<LocationReminder?>(null) }
     val activeReminders = reminders.filter { it.isActive }
     val defaultLocation = LatLng(37.7749, -122.4194)
     val cameraPositionState = rememberCameraPositionState {
@@ -151,6 +152,7 @@ fun MapScreen(
                         "Long-press the map to drop a reminder pin",
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -232,7 +234,7 @@ fun MapScreen(
                             Card(
                                 modifier = Modifier.combinedClickable(
                                     onClick = {},
-                                    onLongClick = { reminderPendingDelete = reminder },
+                                    onLongClick = { reminderPendingAction = reminder },
                                 ),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
@@ -276,12 +278,16 @@ fun MapScreen(
         }
     }
 
-    reminderPendingDelete?.let { reminder ->
-        DeleteReminderDialog(
+    reminderPendingAction?.let { reminder ->
+        ReminderActionsDialog(
             reminder = reminder,
-            onDismiss = { reminderPendingDelete = null },
-            onConfirm = {
-                reminderPendingDelete = null
+            onDismiss = { reminderPendingAction = null },
+            onEdit = {
+                reminderPendingAction = null
+                onEdit(reminder)
+            },
+            onDelete = {
+                reminderPendingAction = null
                 onDelete(reminder)
             },
         )

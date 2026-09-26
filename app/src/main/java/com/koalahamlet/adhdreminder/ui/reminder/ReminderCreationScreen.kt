@@ -42,17 +42,24 @@ import com.koalahamlet.adhdreminder.data.SelectedPlace
 @Composable
 fun ReminderCreationScreen(
     place: SelectedPlace,
+    initialMessage: String = "",
+    initialRadiusMeters: Float = 150f,
+    isEditing: Boolean = false,
     onBack: () -> Unit,
     onSave: (String, Float) -> Unit,
 ) {
-    var message by rememberSaveable(place.latitude, place.longitude) { mutableStateOf("") }
-    var radius by rememberSaveable { mutableFloatStateOf(150f) }
+    var message by rememberSaveable(place.latitude, place.longitude, initialMessage) {
+        mutableStateOf(initialMessage)
+    }
+    var radius by rememberSaveable(place.latitude, place.longitude, initialRadiusMeters) {
+        mutableFloatStateOf(initialRadiusMeters)
+    }
     val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New location reminder") },
+                title = { Text(if (isEditing) "Edit reminder" else "New location reminder") },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             )
@@ -101,7 +108,7 @@ fun ReminderCreationScreen(
                 enabled = message.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
-                Text("Save reminder")
+                Text(if (isEditing) "Save changes" else "Save reminder")
             }
         }
     }
