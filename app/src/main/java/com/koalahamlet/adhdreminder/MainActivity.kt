@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -330,6 +332,7 @@ class MainActivity : ComponentActivity() {
                 onManage = { screen = Screen.REMINDERS },
                 onActivate = ::activateReminders,
                 onRequestLocation = ::requestMapLocation,
+                onDelete = ::deleteReminder,
             )
             Screen.CREATE -> ReminderCreationScreen(
                 place = selectedPlace ?: return,
@@ -367,6 +370,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MapScreen(
     reminders: List<LocationReminder>,
@@ -381,7 +385,9 @@ private fun MapScreen(
     onManage: () -> Unit,
     onActivate: () -> Unit,
     onRequestLocation: () -> Unit,
+    onDelete: (LocationReminder) -> Unit,
 ) {
+    var reminderPendingDelete by remember { mutableStateOf<LocationReminder?>(null) }
     val activeReminders = reminders.filter { it.isActive }
     val defaultLocation = LatLng(37.7749, -122.4194)
     val cameraPositionState = rememberCameraPositionState {
@@ -551,6 +557,10 @@ private fun MapScreen(
                     ) {
                         items(activeReminders, key = { it.id }) { reminder ->
                             Card(
+                                modifier = Modifier.combinedClickable(
+                                    onClick = {},
+                                    onLongClick = { reminderPendingDelete = reminder },
+                                ),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                 )
@@ -595,6 +605,17 @@ private fun MapScreen(
                 }
             }
         }
+    }
+
+    reminderPendingDelete?.let { reminder ->
+        DeleteReminderDialog(
+            reminder = reminder,
+            onDismiss = { reminderPendingDelete = null },
+            onConfirm = {
+                reminderPendingDelete = null
+                onDelete(reminder)
+            },
+        )
     }
 }
 
@@ -675,13 +696,14 @@ private fun ReminderCreationScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ReminderListScreen(
     reminders: List<LocationReminder>,
     onBack: () -> Unit,
     onDelete: (LocationReminder) -> Unit,
 ) {
+    var reminderPendingDelete by remember { mutableStateOf<LocationReminder?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -701,7 +723,12 @@ private fun ReminderListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(reminders, key = { it.id }) { reminder ->
-                    Card {
+                    Card(
+                        modifier = Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = { reminderPendingDelete = reminder },
+                        ),
+                    ) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
@@ -729,6 +756,36 @@ private fun ReminderListScreen(
             }
         }
     }
+
+    reminderPendingDelete?.let { reminder ->
+        DeleteReminderDialog(
+            reminder = reminder,
+            onDismiss = { reminderPendingDelete = null },
+            onConfirm = {
+                reminderPendingDelete = null
+                onDelete(reminder)
+            },
+        )
+    }
+}
+
+@Composable
+private fun DeleteReminderDialog(
+    reminder: LocationReminder,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete reminder?") },
+        text = { Text("“${reminder.message}” will be permanently removed.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable
