@@ -190,6 +190,14 @@ class MainActivity : ComponentActivity() {
         reloadReminders()
     }
 
+    private fun markReminderDone(reminder: LocationReminder) {
+        if (!reminder.isActive) return
+        registrar.remove(reminder.id)
+        ReminderNotifications.cancel(this, reminder.id)
+        store.markCompleted(reminder.id)
+        reloadReminders()
+    }
+
     private fun requestReminderPermissions() {
         permissionRefresh += 1
         if (!registrar.hasForegroundLocation) {
@@ -315,6 +323,7 @@ class MainActivity : ComponentActivity() {
                 onActivate = ::activateReminders,
                 onRequestLocation = ::requestMapLocation,
                 onEdit = ::editReminder,
+                onDone = ::markReminderDone,
                 onDelete = ::deleteReminder,
             )
             Screen.CREATE -> ReminderCreationScreen(
@@ -333,6 +342,7 @@ class MainActivity : ComponentActivity() {
                 reminders = reminders,
                 onBack = { screen = Screen.MAP },
                 onEdit = ::editReminder,
+                onDone = ::markReminderDone,
                 onDelete = ::deleteReminder,
             )
         }

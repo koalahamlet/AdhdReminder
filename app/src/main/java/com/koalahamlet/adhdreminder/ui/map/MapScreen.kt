@@ -48,6 +48,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.koalahamlet.adhdreminder.data.LocationReminder
 import com.koalahamlet.adhdreminder.ui.components.ReminderActionsDialog
+import com.koalahamlet.adhdreminder.ui.components.SwipeReminderActions
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -65,6 +66,7 @@ fun MapScreen(
     onActivate: () -> Unit,
     onRequestLocation: () -> Unit,
     onEdit: (LocationReminder) -> Unit,
+    onDone: (LocationReminder) -> Unit,
     onDelete: (LocationReminder) -> Unit,
 ) {
     var reminderPendingAction by remember { mutableStateOf<LocationReminder?>(null) }
@@ -231,44 +233,50 @@ fun MapScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         items(activeReminders, key = { it.id }) { reminder ->
-                            Card(
-                                modifier = Modifier.combinedClickable(
-                                    onClick = {},
-                                    onLongClick = { reminderPendingAction = reminder },
-                                ),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                ),
+                            SwipeReminderActions(
+                                reminder = reminder,
+                                onDone = onDone,
+                                onDelete = onDelete,
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                Card(
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {},
+                                        onLongClick = { reminderPendingAction = reminder },
+                                    ),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    ),
                                 ) {
-                                    Surface(
-                                        modifier = Modifier.size(38.dp),
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text("●", color = MaterialTheme.colorScheme.primary)
+                                        Surface(
+                                            modifier = Modifier.size(38.dp),
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("●", color = MaterialTheme.colorScheme.primary)
+                                            }
                                         }
-                                    }
-                                    Column(Modifier.weight(1f)) {
-                                        Text(reminder.message, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                        Column(Modifier.weight(1f)) {
+                                            Text(reminder.message, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                            Text(
+                                                reminder.placeName,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                            )
+                                        }
                                         Text(
-                                            reminder.placeName,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
+                                            if (reminder.isTriggered) "ARRIVED" else "${reminder.radiusMeters.toInt()} m",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = if (reminder.isTriggered) MaterialTheme.colorScheme.tertiary
+                                            else MaterialTheme.colorScheme.primary,
                                         )
                                     }
-                                    Text(
-                                        if (reminder.isTriggered) "ARRIVED" else "${reminder.radiusMeters.toInt()} m",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (reminder.isTriggered) MaterialTheme.colorScheme.tertiary
-                                        else MaterialTheme.colorScheme.primary,
-                                    )
                                 }
                             }
                         }

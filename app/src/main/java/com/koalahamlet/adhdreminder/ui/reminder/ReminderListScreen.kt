@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.koalahamlet.adhdreminder.data.LocationReminder
 import com.koalahamlet.adhdreminder.ui.components.ReminderActionsDialog
+import com.koalahamlet.adhdreminder.ui.components.SwipeReminderActions
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -37,6 +38,7 @@ fun ReminderListScreen(
     reminders: List<LocationReminder>,
     onBack: () -> Unit,
     onEdit: (LocationReminder) -> Unit,
+    onDone: (LocationReminder) -> Unit,
     onDelete: (LocationReminder) -> Unit,
 ) {
     var reminderPendingAction by remember { mutableStateOf<LocationReminder?>(null) }
@@ -59,37 +61,42 @@ fun ReminderListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(reminders, key = { it.id }) { reminder ->
-                    Card(
-                        modifier = Modifier.combinedClickable(
-                            onClick = {},
-                            onLongClick = { reminderPendingAction = reminder },
-                        ),
+                    SwipeReminderActions(
+                        reminder = reminder,
+                        onDone = onDone,
+                        onDelete = onDelete,
                     ) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Card(
+                            modifier = Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = { reminderPendingAction = reminder },
+                            ),
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        when {
+                                            reminder.isTriggered -> "READY TO MARK DONE"
+                                            reminder.isActive -> "ACTIVE"
+                                            else -> "COMPLETED"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = when {
+                                            reminder.isTriggered -> MaterialTheme.colorScheme.tertiary
+                                            reminder.isActive -> MaterialTheme.colorScheme.primary
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                    )
+                                    Spacer(Modifier.weight(1f))
+                                }
                                 Text(
-                                    when {
-                                        reminder.isTriggered -> "READY TO MARK DONE"
-                                        reminder.isActive -> "ACTIVE"
-                                        else -> "COMPLETED"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = when {
-                                        reminder.isTriggered -> MaterialTheme.colorScheme.tertiary
-                                        reminder.isActive -> MaterialTheme.colorScheme.primary
-                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
+                                    reminder.message,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
                                 )
-                                Spacer(Modifier.weight(1f))
-                                TextButton(onClick = { onDelete(reminder) }) { Text("Delete") }
+                                Text(reminder.placeName, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${reminder.radiusMeters.toInt()} m radius", style = MaterialTheme.typography.bodySmall)
                             }
-                            Text(
-                                reminder.message,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(reminder.placeName, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${reminder.radiusMeters.toInt()} m radius", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
